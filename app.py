@@ -1,9 +1,7 @@
-﻿import streamlit as st
+import streamlit as st
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import ExtraTreesRegressor
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.preprocessing import StandardScaler
 
 st.set_page_config(page_title='Bike Predictor', layout='wide')
 
@@ -24,9 +22,9 @@ def load_data():
 
     return df.dropna().drop('instant', axis=1)
 
-#    TRAIN MODELS     
+#    TRAIN MODEL     
 @st.cache_resource
-def train_models():
+def train_model():
     df = pd.read_csv('Dataset.csv')
     df.replace('?', np.nan, inplace=True)
     for col in df.select_dtypes(include=['object']).columns:
@@ -49,24 +47,17 @@ def train_models():
     y = model_df['cnt']
     feature_cols = list(X.columns)
 
-    extra_trees = ExtraTreesRegressor(n_estimators=100, random_state=42, n_jobs=-1)
-    extra_trees.fit(X, y)
+    model = ExtraTreesRegressor(n_estimators=100, random_state=42, n_jobs=-1)
+    model.fit(X, y)
 
-    scaler = StandardScaler()
-    X_sc = scaler.fit_transform(X)
-    knn = KNeighborsRegressor(n_neighbors=5)
-    knn.fit(X_sc, y)
+    return model, feature_cols
 
-    return extra_trees, knn, scaler, feature_cols
-
-extra_trees_model, knn_model, scaler, feature_cols = train_models()
+model, feature_cols = train_model()
 
 st.title("Bike Rental Prediction")
 
 #    INPUT  
 with st.sidebar:
-    model_choice = st.selectbox('Select Model', ['Extra Trees', 'KNN'])
-    st.markdown("---")
     hour = st.slider('Hour', 0, 23, 12)
     day = st.selectbox('Day', ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'])
     month = st.selectbox('Month', ['January','February','March','April','May','June',
@@ -245,12 +236,8 @@ if predict:
 
     df_enc = df_enc[feature_cols]
 
-    # Model prediction based on selection
-    if model_choice == 'KNN':
-        df_enc_sc = scaler.transform(df_enc)
-        pred = knn_model.predict(df_enc_sc)[0]
-    else:
-        pred = extra_trees_model.predict(df_enc)[0]
+    # Model prediction
+    pred = model.predict(df_enc)[0]
 
     weather_factor = {
         "Clear": 1.0,
