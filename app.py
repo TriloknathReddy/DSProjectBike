@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
@@ -6,10 +6,11 @@ import os
 
 st.set_page_config(page_title='Bike Predictor', layout='wide')
 
-# ---------------- LOAD DATA ----------------
+#  LOAD DATA 
 @st.cache_data
 def load_data():
-    df = pd.read_csv('Dataset.csv')
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    df = pd.read_csv(os.path.join(base_path, 'Dataset.csv'))
     df.replace('?', np.nan, inplace=True)
 
     for col in df.select_dtypes(include=['object']).columns:
@@ -23,18 +24,19 @@ def load_data():
 
     return df.dropna().drop('instant', axis=1)
 
-# ---------------- LOAD MODEL ----------------
+#  LOAD MODEL 
 @st.cache_resource
 def load_model():
-    model = joblib.load("model.pkl")
-    feature_cols = joblib.load("features.pkl")
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    model = joblib.load(os.path.join(base_path, "model.pkl"))
+    feature_cols = joblib.load(os.path.join(base_path, "features.pkl"))
     return model, feature_cols
 
 model, feature_cols = load_model()
 
 st.title("Bike Rental Prediction")
 
-# ---------------- INPUT ----------------
+#  INPUT 
 with st.sidebar:
     hour = st.slider('Hour', 0, 23, 12)
     day = st.selectbox('Day', ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'])
@@ -54,7 +56,7 @@ with st.sidebar:
 
     predict = st.button("Predict")
 
-# ---------------- DASHBOARD ----------------
+#  DASHBOARD 
 st.markdown("---")
 st.subheader("Input Dashboard")
 
@@ -159,7 +161,7 @@ with row3_col3:
 
 st.markdown("---")
 
-# ---------------- PREDICTION ----------------
+#  PREDICTION 
 if predict:
 
     data = {
@@ -217,7 +219,6 @@ if predict:
     # Model prediction
     pred = model.predict(df_enc)[0]
 
-    # ---------------- LOGICAL FIX (IMPORTANT) ----------------
     weather_factor = {
         "Clear": 1.0,
         "Mist": 0.9,
@@ -227,7 +228,7 @@ if predict:
 
     pred = pred * weather_factor.get(weather, 1.0)
 
-    # ---------------- OUTPUT ----------------
+    #  OUTPUT 
     st.write("Predicted Rentals:", int(pred))
 
     if pred > 500:
